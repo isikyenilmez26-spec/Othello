@@ -357,12 +357,24 @@ body { overflow-x: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ---- Session kimliği ----
-# Her tarayıcı oturumu için benzersiz bir UUID üretilir.
-# st.session_state içinde saklandığından sayfayı yenilesen bile aynı kalır
-# (sekmeyi kapatıp açarsan yeni bir UUID alırsın).
+# ---- Session kimliği — URL query param ile kalıcı ----
+# st.session_state sayfa yenilenince sıfırlanır; st.query_params ise
+# tarayıcının URL çubuğunda (?sid=xxx) yaşadığından yenilemede korunur.
+#
+# Akış:
+#   İlk ziyaret  → URL'de ?sid yok → yeni UUID üret → URL'e yaz + session_state'e kaydet
+#   Sayfa yenile → session_state kaybolur ama URL'de ?sid=xxx hâlâ var
+#                → URL'den oku → session_state'e geri yükle (eski oyuncu kimliği korunur)
+#   Yeni sekme   → URL'de ?sid yok → ayrı UUID → bağımsız oyuncu
 if "session_id" not in st.session_state:
-    st.session_state.session_id = str(uuid.uuid4())
+    if "sid" in st.query_params:
+        # Yenileme: URL'deki mevcut kimliği geri yükle
+        st.session_state.session_id = st.query_params["sid"]
+    else:
+        # İlk ziyaret: yeni UUID oluştur, URL'e ekle
+        new_sid = str(uuid.uuid4())
+        st.session_state.session_id = new_sid
+        st.query_params["sid"] = new_sid  # Tarayıcı URL'ini günceller, rerun tetiklemez
 
 session_id = st.session_state.session_id
 
