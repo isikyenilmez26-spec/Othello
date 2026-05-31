@@ -290,20 +290,21 @@ div[data-testid="stColumns"] div[data-testid="column"] button:disabled {
     margin-bottom: 4px;
 }
 
-/* ── Mobil Optimizasyon (≤ 640px) ───────────────────────────────────────────
-   Hedef: 8 hücre × 38px = 304px + etiket ~24px + gap 16px ≈ 344px
-   360px ekranda (0.3rem × 2 = ~10px padding) → 350px alan → sığar ✓     */
+/* ── Mobil: yatay taşmayı her koşulda engelle ─────────────────────────── */
+body { overflow-x: hidden !important; }
+
+/* ── ≤ 640px: tablet / büyük telefon ──────────────────────────────────── */
 @media (max-width: 640px) {
-
-    /* Yan boşlukları minimize et */
     .block-container {
-        padding-left:  0.3rem !important;
-        padding-right: 0.3rem !important;
-        padding-top:   0.8rem !important;
-        overflow-x: hidden !important;  /* yatay kaymayı engelle */
+        padding-left:  0.2rem !important;
+        padding-right: 0.2rem !important;
+        padding-top:   0.6rem !important;
+        overflow-x: hidden !important;
     }
-
-    /* Küçük buton: 38px parmak dokunuşuna uygun minimum boyut */
+    /* Satır sarmalanmasını engelle — tahta tek satırda kalsın */
+    div[data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+    }
     div[data-testid="stColumns"] div[data-testid="column"] button {
         width:      38px !important;
         height:     38px !important;
@@ -314,19 +315,43 @@ div[data-testid="stColumns"] div[data-testid="column"] button:disabled {
         border-width: 1px !important;
         margin: 0 auto !important;
     }
-
-    /* Küçük ekranda etiketleri küçült */
-    .row-label {
-        font-size:  11px !important;
-        margin-top: 10px !important;
-    }
-    .col-label {
-        font-size:   11px !important;
-        margin-bottom: 2px !important;
-    }
-
-    /* Başlık boyutunu küçült */
+    .row-label { font-size: 11px !important; margin-top: 10px !important; }
+    .col-label { font-size: 11px !important; margin-bottom: 2px !important; }
     h1 { font-size: 1.3rem !important; }
+}
+
+/* ── ≤ 430px: standart dikey telefon (iPhone 14, Samsung S23 vb.) ───────
+   [0.4]+[1]×8 = 8.4 birim, 430px-4px padding-16px gap = 410px
+   Her hücre: 410/8.4 ≈ 48.8px → 36px buton rahatlıkla sığar           */
+@media (max-width: 430px) {
+    .block-container {
+        padding-left:  0.1rem !important;
+        padding-right: 0.1rem !important;
+    }
+    div[data-testid="stColumns"] div[data-testid="column"] button {
+        width:      36px !important;
+        height:     36px !important;
+        min-width:  36px !important;
+        min-height: 36px !important;
+        font-size:  18px !important;
+    }
+    .row-label { font-size: 10px !important; margin-top: 9px !important; }
+    .col-label { font-size: 10px !important; }
+}
+
+/* ── ≤ 380px: küçük / eski telefon (360px ekranlar dahil) ───────────────
+   360px - 2px padding - 16px gap = 342px → her hücre: 342/8.4 ≈ 40.7px
+   32px buton 40px hücreye sığar ✓                                       */
+@media (max-width: 380px) {
+    div[data-testid="stColumns"] div[data-testid="column"] button {
+        width:      32px !important;
+        height:     32px !important;
+        min-width:  32px !important;
+        min-height: 32px !important;
+        font-size:  15px !important;
+    }
+    .row-label { font-size: 9px !important; margin-top: 7px !important; }
+    .col-label { font-size: 9px !important; }
 }
 
 </style>
@@ -461,7 +486,7 @@ st.markdown("<div style='margin: 6px 0'></div>", unsafe_allow_html=True)
 valid_moves = get_valid_moves(board, current_player) if not game_over else []
 
 # ---- Tahta: Sütun Başlıkları ----
-header_cols = st.columns([0.6] + [1] * SIZE)
+header_cols = st.columns([0.4] + [1] * SIZE)
 header_cols[0].markdown("<div class='col-label'> </div>", unsafe_allow_html=True)
 for i in range(SIZE):
     header_cols[i + 1].markdown(
@@ -471,7 +496,7 @@ for i in range(SIZE):
 
 # ---- Tahta: Satırlar ----
 for y in range(SIZE):
-    row_cols = st.columns([0.6] + [1] * SIZE)
+    row_cols = st.columns([0.4] + [1] * SIZE)
     row_cols[0].markdown(f"<div class='row-label'>{y + 1}</div>", unsafe_allow_html=True)
 
     for x in range(SIZE):
