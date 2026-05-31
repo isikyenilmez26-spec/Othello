@@ -232,21 +232,41 @@ st.set_page_config(page_title="Othello", page_icon="⬛", layout="centered")
 st.markdown("""
 <style>
 
-/* ── Sütunlar arası gap'i sıfıra yakın tut ──────────────────────────────────
-   Varsayılan ~1rem (16px) × 8 boşluk = 128px kayıp → mobilde taşma yapar.
-   2px'e çekince 8 × 2px = 16px → tahta 360px ekrana sığar.              */
-div[data-testid="stHorizontalBlock"] {
-    gap: 2px !important;
-}
-/* Sütun iç yatay padding'ini kaldır — buton tam ortalansın */
-div[data-testid="stColumns"] div[data-testid="column"] {
-    padding-left:  0px !important;
-    padding-right: 0px !important;
-    min-width: 0   !important;   /* flex shrink'e izin ver */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SÜTUN GAP + PADDING SIFIRLAMA — tüm ekran boyutlarında geçerli
+   Streamlit varsayılan gap ≈ 1rem = 16px → 8 boşluk = 128px → taşma!
+   Birden fazla selektör: farklı Streamlit sürümlerinde hangisi eşleşirse.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Flex container: gap → 0 */
+[data-testid="stHorizontalBlock"],
+div[data-testid="stHorizontalBlock"],
+[data-testid="stColumns"],
+div[data-testid="stColumns"] {
+    gap:         0px !important;
+    column-gap:  0px !important;
+    row-gap:     0px !important;
+    flex-wrap:   nowrap !important;
 }
 
-/* ── Masaüstü Buton Stili ────────────────────────────────────────────────── */
-div[data-testid="stColumns"] div[data-testid="column"] button {
+/* Sütun öğeleri: padding + margin → 0, shrink'e izin ver */
+[data-testid="stHorizontalBlock"] > div,
+[data-testid="stHorizontalBlock"] > section,
+[data-testid="stColumns"] > div,
+[data-testid="stColumns"] > section,
+div[data-testid="stHorizontalBlock"] > div,
+div[data-testid="stColumns"] > div {
+    padding-left:  0px !important;
+    padding-right: 0px !important;
+    margin-left:   0px !important;
+    margin-right:  0px !important;
+    min-width:     0px !important;
+    flex-shrink:   1   !important;
+}
+
+/* ── Masaüstü Buton Stili ─────────────────────────────────────────────── */
+div[data-testid="stColumns"] div[data-testid="column"] button,
+[data-testid="stHorizontalBlock"] button {
     width:      56px !important;
     height:     56px !important;
     min-width:  56px !important;
@@ -261,20 +281,22 @@ div[data-testid="stColumns"] div[data-testid="column"] button {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    /* Mobil dokunma iyileştirmeleri — çift-dokunma zoom'u önler */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
 }
-div[data-testid="stColumns"] div[data-testid="column"] button:hover:not(:disabled) {
+div[data-testid="stColumns"] div[data-testid="column"] button:hover:not(:disabled),
+[data-testid="stHorizontalBlock"] button:hover:not(:disabled) {
     background-color: #2e7d32 !important;
     border-color: #81c784 !important;
     cursor: pointer !important;
 }
-div[data-testid="stColumns"] div[data-testid="column"] button:disabled {
+div[data-testid="stColumns"] div[data-testid="column"] button:disabled,
+[data-testid="stHorizontalBlock"] button:disabled {
     opacity: 1 !important;
     cursor: default !important;
 }
+
 .row-label {
     text-align: center;
     font-weight: bold;
@@ -290,68 +312,58 @@ div[data-testid="stColumns"] div[data-testid="column"] button:disabled {
     margin-bottom: 4px;
 }
 
-/* ── Mobil: yatay taşmayı her koşulda engelle ─────────────────────────── */
-body { overflow-x: hidden !important; }
+/* ── Genel taşma koruması ─────────────────────────────────────────────── */
+html, body { overflow-x: hidden !important; max-width: 100% !important; }
 
-/* ── ≤ 640px: tablet / büyük telefon ──────────────────────────────────── */
-@media (max-width: 640px) {
-    .block-container {
-        padding-left:  0.2rem !important;
-        padding-right: 0.2rem !important;
-        padding-top:   0.6rem !important;
-        overflow-x: hidden !important;
-    }
-    /* Satır sarmalanmasını engelle — tahta tek satırda kalsın */
-    div[data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-    }
-    div[data-testid="stColumns"] div[data-testid="column"] button {
-        width:      38px !important;
-        height:     38px !important;
-        min-width:  38px !important;
-        min-height: 38px !important;
-        font-size:  20px !important;
-        border-radius: 4px !important;
-        border-width: 1px !important;
-        margin: 0 auto !important;
-    }
-    .row-label { font-size: 11px !important; margin-top: 10px !important; }
-    .col-label { font-size: 11px !important; margin-bottom: 2px !important; }
-    h1 { font-size: 1.3rem !important; }
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBİL OPTİMİZASYON — vw tabanlı buton boyutu
 
-/* ── ≤ 430px: standart dikey telefon (iPhone 14, Samsung S23 vb.) ───────
-   [0.4]+[1]×8 = 8.4 birim, 430px-4px padding-16px gap = 410px
-   Her hücre: 410/8.4 ≈ 48.8px → 36px buton rahatlıkla sığar           */
-@media (max-width: 430px) {
-    .block-container {
+   Formül: gap=0 ile sütun genişliği ≈ (100vw - 2px padding) / 8.4 birim
+   Buton = min(44px, 11vw):
+     360px ekran → 11vw = 39.6px  ✓
+     390px ekran → 11vw = 42.9px  ✓
+     430px ekran → 11vw = 47.3px → 44px'e kırpılır ✓
+     320px ekran → 11vw = 35.2px  ✓
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media screen and (max-width: 768px) {
+
+    /* Container padding'i minimize et */
+    .block-container,
+    section.main .block-container,
+    [data-testid="stMainBlockContainer"],
+    [data-testid="stAppViewBlockContainer"] {
         padding-left:  0.1rem !important;
         padding-right: 0.1rem !important;
+        padding-top:   0.5rem !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
     }
-    div[data-testid="stColumns"] div[data-testid="column"] button {
-        width:      36px !important;
-        height:     36px !important;
-        min-width:  36px !important;
-        min-height: 36px !important;
-        font-size:  18px !important;
-    }
-    .row-label { font-size: 10px !important; margin-top: 9px !important; }
-    .col-label { font-size: 10px !important; }
-}
 
-/* ── ≤ 380px: küçük / eski telefon (360px ekranlar dahil) ───────────────
-   360px - 2px padding - 16px gap = 342px → her hücre: 342/8.4 ≈ 40.7px
-   32px buton 40px hücreye sığar ✓                                       */
-@media (max-width: 380px) {
-    div[data-testid="stColumns"] div[data-testid="column"] button {
-        width:      32px !important;
-        height:     32px !important;
-        min-width:  32px !important;
-        min-height: 32px !important;
-        font-size:  15px !important;
+    /* Buton: min(44px, 11vw) → ekran genişliğine göre otomatik küçülür */
+    div[data-testid="stColumns"] div[data-testid="column"] button,
+    [data-testid="stHorizontalBlock"] button {
+        width:      min(44px, 11vw) !important;
+        height:     min(44px, 11vw) !important;
+        min-width:  min(44px, 11vw) !important;
+        min-height: min(44px, 11vw) !important;
+        font-size:  min(22px, 5.5vw) !important;
+        border-radius: 4px !important;
+        border-width:  1px  !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
     }
-    .row-label { font-size: 9px !important; margin-top: 7px !important; }
-    .col-label { font-size: 9px !important; }
+
+    /* Etiketler: vw ile orantılı küçülür */
+    .row-label {
+        font-size:  min(13px, 2.8vw) !important;
+        margin-top: min(12px, 3vw)   !important;
+    }
+    .col-label {
+        font-size:     min(13px, 2.8vw) !important;
+        margin-bottom: 2px !important;
+    }
+
+    h1 { font-size: 1.2rem !important; }
 }
 
 </style>
